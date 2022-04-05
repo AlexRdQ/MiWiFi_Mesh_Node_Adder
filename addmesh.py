@@ -6,21 +6,25 @@ import uuid
 import getpass
 import requests
 
-
 PUBLIC_KEY = "a2ffa5c9be07488bbb04a3a47d3c5f6a"
+
 
 def sha1(x: str):
     return hashlib.sha1(x.encode()).hexdigest()
 
+
 def get_mac_address():
     as_hex = f"{uuid.getnode():012x}"
-    return ":".join(as_hex[i : i + 2] for i in range(0, 12, 2))
+    return ":".join(as_hex[i: i + 2] for i in range(0, 12, 2))
+
 
 def generate_nonce(miwifi_type=0):
     return f"{miwifi_type}_{get_mac_address()}_{int(time.time())}_{int(random.random() * 1000)}"
 
+
 def generate_password_hash(nonce, password):
     return sha1(nonce + sha1(password + PUBLIC_KEY))
+
 
 class MiWiFi():
     def __init__(self, address, miwifi_type=0):
@@ -44,15 +48,15 @@ class MiWiFi():
             print("Something went wrong while retrieving the infos!")
             exit(1)
 
-    def set_aiot_status(self,status):
+    def set_aiot_status(self, status):
         if not self.token:
             print("You need to be logged in to use this function!")
             return None
-        aiotstatus = (status) and "ON" or "OFF"
+        aiotstatus = status and "ON" or "OFF"
         print(f"Turning AIoT scan to {aiotstatus}...")
         response = requests.post(
             f"{self.address}/cgi-bin/luci/;stok={self.token}/api/xqnetwork/miscan_switch",
-            data = {
+            data={
                 "on": str(int(status))
             },
         )
@@ -79,7 +83,6 @@ class MiWiFi():
             print("Something went wrong while retrieving the aiot infos!")
             exit(1)
 
-
     def get_5ghz_xiaomi(self):
         if not self.token:
             print("You need to be logged in to use this function!")
@@ -94,10 +97,11 @@ class MiWiFi():
                     if (ap["band"] == "5g" and ap["ssid"].endswith("_5G")) or (ap["band"] == "2g"):
                         if detected == 0:
                             print("Detected APs:")
-                        print(f'\tBand: {ap["band"]}hz SSID: {ap["ssid"]} CH: {ap["channel"]} MODEL: {ap["wsc_modelname"]} MAC: {ap["bssid"]}')
+                        print(
+                            f'\tBand: {ap["band"]}hz SSID: {ap["ssid"]} CH: {ap["channel"]} MODEL: {ap["wsc_modelname"]} MAC: {ap["bssid"]}')
                         if ap["band"] == "2g":
                             pmac = ap['bssid'].split(":")
-                            pmac[-1] = hex(int(pmac[-1],16)+1)[2:]
+                            pmac[-1] = hex(int(pmac[-1], 16) + 1)[2:]
                             pmac = ':'.join(pmac).upper()
                             print(f'\t\tPOSSIBLE MAC for 5GHz: {pmac}')
                         detected += 1
@@ -140,6 +144,7 @@ class MiWiFi():
             return jdata
         return None
 
+
 if __name__ == "__main__":
     print("MiWiFi Mesh Node Adder v1.0 by ShotokanZH")
     address_master = input("Master (online, configured) router address: ")
@@ -147,13 +152,13 @@ if __name__ == "__main__":
         address_master = f"http://{address_master}"
 
     password_master = getpass.getpass(prompt='Master password: ')
-    router = MiWiFi(address = address_master)
+    router = MiWiFi(address=address_master)
     print("Logging in..")
     if not router.login(password_master):
         print("Authentication failed!")
         exit(1)
     print("Login: OK\n")
-    
+
     router.get_infos()
     if not router.get_aiot_status():
         router.set_aiot_status(True)
